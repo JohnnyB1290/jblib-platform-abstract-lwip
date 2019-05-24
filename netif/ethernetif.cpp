@@ -1,11 +1,12 @@
 /**
  * @file
- * Ethernet Interface Skeleton
+ * lwIP Ethernet Interface Realization for JbLib
  *
  */
 
 /*
  * Copyright (c) 2001-2004 Swedish Institute of Computer Science.
+ * Copyright © 2019 Evgeniy Ivanov. Contacts: <strelok1290@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
@@ -36,6 +37,10 @@
  *
  */
 
+// This is an open source non-commercial project. Dear PVS-Studio, please check it.
+
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+
 /*
  * This file is a skeleton for developing Ethernet network interface
  * drivers for lwIP. Add code to the low_level functions and do a
@@ -43,10 +48,11 @@
  * something that better describes your network interface.
  */
 
+#include <string.h>
 #include "arch/ethernetif.h"
-#include "Void_Ethernet.hpp"
-#include "string.h"
+#include "IVoidEthernet.hpp"
 
+using namespace jblib::jbkernel;
 
 /**
  * This function should do the actual transmission of the packet. The packet is
@@ -66,8 +72,7 @@
 
 static err_t low_level_output(struct netif* netif, struct pbuf* p)
 {
-	Ethernet_t* Ethernetif_ptr = (Ethernet_t*)netif->state;
-	Ethernetif_ptr->Add_to_TX_queue(p);
+	((IVoidEthernet*)netif->state)->addToTxQueue(p);
 	LINK_STATS_INC(link.xmit);
 	return ERR_OK;
 }
@@ -81,26 +86,19 @@ static err_t low_level_output(struct netif* netif, struct pbuf* p)
  *
  * @param netif the lwip network interface structure for this ethernetif
  */
-void lwip_ethernetif_input(struct netif* netif, EthernetFrame* Frame_ptr, uint16_t frame_size)
+void lwip_ethernetif_input(struct netif* netif, EthernetFrame* frame, uint16_t size)
 {
-	struct eth_hdr* ethhdr;
-	struct pbuf* p;
-
-	p = pbuf_alloc(PBUF_RAW, (u16_t)frame_size, PBUF_REF);
-	if (p == NULL)
-	{
+	struct pbuf* p = pbuf_alloc(PBUF_RAW, (u16_t)size, PBUF_REF);
+	if (p == NULL) {
 		LWIP_DEBUGF(EMAC_DEBUG | LWIP_DBG_TRACE, ("LW IP low_level_input: could not allocate RX pbuf\n\r"));
 		LINK_STATS_INC(link.memerr);
 		LINK_STATS_INC(link.drop);
 		return;
 	}
-
-	p->payload = (void*)Frame_ptr;
-	p->len = p->tot_len = frame_size;
-
+	p->payload = (void*)frame;
+	p->len = p->tot_len = size;
 	/* points to packet payload, which starts with an Ethernet header */
-	ethhdr = (eth_hdr*)p->payload;
-
+	struct eth_hdr* ethhdr = (eth_hdr*)p->payload;
 	switch (htons(ethhdr->type))
 	{
 		case ETHTYPE_IP:
@@ -109,28 +107,28 @@ void lwip_ethernetif_input(struct netif* netif, EthernetFrame* Frame_ptr, uint16
 		case ETHTYPE_PPPOEDISC:
 		case ETHTYPE_PPPOE:
 #endif /* PPPOE_SUPPORT */
+		{
 			LINK_STATS_INC(link.recv);
 			/* full packet send to tcpip_thread to process */
-			if (netif->input(p, netif) != ERR_OK)
-			{
+			if (netif->input(p, netif) != ERR_OK) {
 				LWIP_DEBUGF(NETIF_DEBUG,("lpc_enetif_input: IP input error\n"));
 				/* Free buffer */
 				pbuf_free(p);
 				p = NULL;
 			}
 			else
-			{
 				LINK_STATS_INC(link.recv);
-			}
-			break;
-	default:
-		/* Return buffer */
-		LINK_STATS_INC(link.proterr);
-		pbuf_free(p);
-		p = NULL;
+		}
+		break;
+		default:
+		{
+			/* Return buffer */
+			LINK_STATS_INC(link.proterr);
+			pbuf_free(p);
+			p = NULL;
+		}
 		break;
 	}
-
 }
 
 /**
@@ -147,18 +145,11 @@ void lwip_ethernetif_input(struct netif* netif, EthernetFrame* Frame_ptr, uint16
  */
 err_t lwip_ethernetif_init(struct netif* netif)
 {
-	Ethernet_t* Ethernetif_ptr = (Ethernet_t*)netif->state;
-
-//	LWIP_ASSERT("netif != NULL", (netif != NULL));
-
-	static uint8_t* Mac_ptr;
-	Ethernetif_ptr->GetParameter(MAC_param, (void*)&Mac_ptr);
-	
-	memcpy(netif->hwaddr, Mac_ptr,6);
-	
+	static uint8_t* mac;
+	((IVoidEthernet*)netif->state)->getParameter(PARAMETER_MAC, (void*)&mac);
+	memcpy(netif->hwaddr, mac, 6);
 	netif->hwaddr_len = ETHARP_HWADDR_LEN;
 	netif->mtu = 1500;
-
 	netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_UP | NETIF_FLAG_ETHERNET;
 
 	/* device capabilities */
@@ -168,7 +159,7 @@ err_t lwip_ethernetif_init(struct netif* netif)
 
 #if LWIP_NETIF_HOSTNAME
 	/* Initialize interface hostname */
-	netif->hostname = "KTP_ETH";
+	netif->hostname = "JB_ETH";
 #endif /* LWIP_NETIF_HOSTNAME */
 
 	netif->name[0] = 'e';

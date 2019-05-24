@@ -9,7 +9,6 @@
 
 #if NO_SYS == 1
 
-#include "chip.h"
 #include "arch/systick_arch.h"
 
 /* Saved total time in mS since timer was enabled */
