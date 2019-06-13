@@ -44,7 +44,7 @@
 #include "lwip/ethip6.h"
 #include "lwip/etharp.h"
 #include "netif/ppp/pppoe.h"
-#include "jb_common.h"
+#include "jbkernel/jb_common.h"
 
 #ifndef ETHERNETIF_H_
 #define ETHERNETIF_H_

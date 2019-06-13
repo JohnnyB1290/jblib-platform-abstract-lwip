@@ -50,7 +50,7 @@
 
 #include <string.h>
 #include "arch/ethernetif.h"
-#include "IVoidEthernet.hpp"
+#include "jbkernel/IVoidEthernet.hpp"
 
 using namespace jblib::jbkernel;
 
