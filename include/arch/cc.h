@@ -63,7 +63,9 @@ typedef uintptr_t          mem_ptr_t;
 
 #if !defined(__CODE_RED) || !defined(__LPC43XX__)
 /* ARM/LPC17xx is little endian only */
+#ifndef BYTE_ORDER
 #define BYTE_ORDER LITTLE_ENDIAN
+#endif
 #endif
 
 /* Use LWIP error codes */
